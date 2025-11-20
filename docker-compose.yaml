@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: healthcheck-postgres
+    environment:
+      POSTGRES_DB: healthdb
+      POSTGRES_USER: health
+      POSTGRES_PASSWORD: healthpass
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U health -d healthdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8.4-alpine
+    container_name: healthcheck-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4.2-management
+    container_name: healthcheck-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mock-server:
+    image: wiremock/wiremock:3.13.2
+    container_name: healthcheck-mock-server
+    ports:
+      - "18080:8080"
+    volumes:
+      - ./mock-server:/home/wiremock
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:

@@ -1,0 +1,8 @@
+### HEALTH
+GET http://localhost:8080/actuator/health
+
+### Liveness
+GET http://localhost:8080/actuator/health/liveness
+
+### Readiness
+GET http://localhost:8080/actuator/health/readiness
