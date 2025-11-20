@@ -1,5 +1,7 @@
 package com.chainsea.healthcheck.health;
 
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
@@ -21,9 +23,18 @@ public class RabbitMqHealthIndicator extends AbstractHealthIndicator {
                 builder.up();
                 return;
             }
+            resetIfCachingFactory();
             builder.down().withDetail("error", "Connection not open");
-        } catch (Exception ex) {
+        } catch (AmqpException ex) {
+            resetIfCachingFactory();
             builder.down(ex);
+        }
+    }
+
+    // Note: Do not put connection reset in health check, put it in logic
+    private void resetIfCachingFactory() {
+        if (connectionFactory instanceof CachingConnectionFactory cachingConnectionFactory) {
+            cachingConnectionFactory.resetConnection();
         }
     }
 }

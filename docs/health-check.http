@@ -1,4 +1,4 @@
-### HEALTH
+### Health
 GET http://localhost:8080/actuator/health
 
 ### Liveness
