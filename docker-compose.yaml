@@ -28,6 +28,21 @@ services:
       timeout: 5s
       retries: 5
 
+  mongodb:
+    image: mongo:8.0
+    container_name: healthcheck-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: healthdb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:4.2-management
     container_name: healthcheck-rabbitmq
@@ -58,3 +73,4 @@ services:
 
 volumes:
   postgres-data:
+  mongodb-data:

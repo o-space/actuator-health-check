@@ -16,6 +16,10 @@ spring:
           lob:
             non_contextual_creation: true
   data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: healthdb
     redis:
       host: localhost
       port: 16379
@@ -46,6 +50,7 @@ management:
             - postgres
             - redis
             - rabbitmq
+            - mongodb
             - mockWebServer
   health:
     defaults:
