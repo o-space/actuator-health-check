@@ -17,6 +17,7 @@ public class RedisHealthIndicator extends AbstractHealthIndicator {
 
     @Override
     protected void doHealthCheck(Health.Builder builder) {
+        // TODO: timeout config (!important)
         String pong = redisTemplate.execute(RedisConnectionCommands::ping, false);
         if ("PONG".equalsIgnoreCase(pong)) {
             builder.up();
