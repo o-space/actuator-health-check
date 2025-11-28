@@ -15,7 +15,7 @@ public class PostgresHealthIndicator extends AbstractHealthIndicator {
     }
 
     @Override
-    protected void doHealthCheck(Health.Builder builder) throws Exception {
+    protected void doHealthCheck(Health.Builder builder) {
         Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
         if (result != null && result == 1) {
             builder.up();

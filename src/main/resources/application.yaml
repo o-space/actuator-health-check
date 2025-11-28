@@ -40,6 +40,7 @@ health-check:
     - rabbitmq
     - mongodb
     - mockWebServer
+  schedule-interval: 10000
 
 management:
   endpoints:
@@ -65,4 +66,3 @@ management:
   health:
     defaults:
       enabled: false
-

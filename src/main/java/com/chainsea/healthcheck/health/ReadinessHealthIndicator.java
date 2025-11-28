@@ -6,53 +6,46 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component("degradedReadiness")
 public class ReadinessHealthIndicator implements HealthIndicator {
 
     private static final Status DEGRADED = new Status("DEGRADED", "Degraded");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
     private final HealthCheckProperties properties;
-    private final Map<String, HealthIndicator> healthIndicators;
+    private final HealthStatusCache healthStatusCache;
 
     public ReadinessHealthIndicator(HealthCheckProperties properties,
-                                    PostgresHealthIndicator postgresHealthIndicator,
-                                    RedisHealthIndicator redisHealthIndicator,
-                                    RabbitMqHealthIndicator rabbitMqHealthIndicator,
-                                    MongoDbHealthIndicator mongoDbHealthIndicator,
-                                    MockWebServerHealthIndicator mockWebServerHealthIndicator) {
+                                    HealthStatusCache healthStatusCache) {
         this.properties = properties;
-        this.healthIndicators = new HashMap<>();
-        this.healthIndicators.put("postgres", postgresHealthIndicator);
-        this.healthIndicators.put("redis", redisHealthIndicator);
-        this.healthIndicators.put("rabbitmq", rabbitMqHealthIndicator);
-        this.healthIndicators.put("mongodb", mongoDbHealthIndicator);
-        this.healthIndicators.put("mockWebServer", mockWebServerHealthIndicator);
+        this.healthStatusCache = healthStatusCache;
     }
 
     @Override
     public Health health() {
-        Map<String, Health> healths = new LinkedHashMap<>();
-        Map<String, String> statusSummary = new LinkedHashMap<>();
+        Map<String, HealthStatusCache.CachedHealth> cachedHealths = healthStatusCache.getAllCachedHealths();
+        Map<String, Map<String, String>> servicesInfo = buildServicesInfo(cachedHealths);
+        ServiceStatusSummary summary = analyzeServiceStatus(cachedHealths);
 
-        for (Map.Entry<String, HealthIndicator> entry : healthIndicators.entrySet()) {
-            String serviceName = entry.getKey();
-            Health serviceHealth;
-            try {
-                serviceHealth = entry.getValue().health();
-            } catch (Exception e) {
-                serviceHealth = Health.down()
-                        .withException(e)
-                        .build();
-            }
-            healths.put(serviceName, serviceHealth);
-            statusSummary.put(serviceName, serviceHealth.getStatus().getCode());
-        }
+        return buildHealthResponse(summary, servicesInfo);
+    }
 
+    private Map<String, Map<String, String>> buildServicesInfo(Map<String, HealthStatusCache.CachedHealth> cachedHealths) {
+        return cachedHealths.entrySet()
+                .stream()
+                .map(health -> Map.entry(
+                        health.getKey(),
+                        Map.of("status", health.getValue().health().getStatus().getCode(),
+                                "time", TIME_FORMATTER.format(health.getValue().lastUpdateTime()))))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private ServiceStatusSummary analyzeServiceStatus(Map<String, HealthStatusCache.CachedHealth> cachedHealths) {
         Set<String> criticalServices = properties.getCriticalServices();
         Set<String> nonCriticalServices = properties.getNonCriticalServices();
 
@@ -63,10 +56,9 @@ public class ReadinessHealthIndicator implements HealthIndicator {
         int nonCriticalUpCount = 0;
         int nonCriticalTotalCount = 0;
 
-        for (Map.Entry<String, Health> entry : healths.entrySet()) {
+        for (Map.Entry<String, HealthStatusCache.CachedHealth> entry : cachedHealths.entrySet()) {
             String serviceName = entry.getKey();
-            Health health = entry.getValue();
-            boolean isUp = Status.UP.equals(health.getStatus());
+            boolean isUp = Status.UP.equals(entry.getValue().health().getStatus());
 
             if (criticalServices.contains(serviceName)) {
                 criticalTotalCount++;
@@ -85,29 +77,51 @@ public class ReadinessHealthIndicator implements HealthIndicator {
             }
         }
 
+        return new ServiceStatusSummary(
+                hasCriticalFailure,
+                hasNonCriticalFailure,
+                criticalUpCount,
+                criticalTotalCount,
+                nonCriticalUpCount,
+                nonCriticalTotalCount
+        );
+    }
+
+    private Health buildHealthResponse(ServiceStatusSummary summary, Map<String, Map<String, String>> servicesInfo) {
         Health.Builder builder = new Health.Builder();
 
-        if (hasCriticalFailure) {
+        String criticalServicesUp = summary.criticalUpCount() + "/" + summary.criticalTotalCount();
+        String nonCriticalServicesUp = summary.nonCriticalUpCount() + "/" + summary.nonCriticalTotalCount();
+
+        if (summary.hasCriticalFailure()) {
             builder.status(Status.DOWN)
                     .withDetail("reason", "Critical services are down")
-                    .withDetail("criticalServicesUp", criticalUpCount + "/" + criticalTotalCount)
-                    .withDetail("nonCriticalServicesUp", nonCriticalUpCount + "/" + nonCriticalTotalCount);
-        } else if (hasNonCriticalFailure) {
+                    .withDetail("criticalServicesUp", criticalServicesUp)
+                    .withDetail("nonCriticalServicesUp", nonCriticalServicesUp);
+        } else if (summary.hasNonCriticalFailure()) {
             builder.status(DEGRADED)
                     .withDetail("reason", "Non-critical services are down, but system is partially available")
-                    .withDetail("criticalServicesUp", criticalUpCount + "/" + criticalTotalCount)
-                    .withDetail("nonCriticalServicesUp", nonCriticalUpCount + "/" + nonCriticalTotalCount);
+                    .withDetail("criticalServicesUp", criticalServicesUp)
+                    .withDetail("nonCriticalServicesUp", nonCriticalServicesUp);
         } else {
             builder.status(Status.UP)
                     .withDetail("reason", "All services are up")
-                    .withDetail("criticalServicesUp", criticalUpCount + "/" + criticalTotalCount)
-                    .withDetail("nonCriticalServicesUp", nonCriticalUpCount + "/" + nonCriticalTotalCount);
+                    .withDetail("criticalServicesUp", criticalServicesUp)
+                    .withDetail("nonCriticalServicesUp", nonCriticalServicesUp);
         }
 
-        builder.withDetail("services", statusSummary);
-        // builder.withDetail("details", healths);
-
+        builder.withDetail("services", servicesInfo);
         return builder.build();
+    }
+
+    private record ServiceStatusSummary(
+            boolean hasCriticalFailure,
+            boolean hasNonCriticalFailure,
+            int criticalUpCount,
+            int criticalTotalCount,
+            int nonCriticalUpCount,
+            int nonCriticalTotalCount
+    ) {
     }
 }
 
