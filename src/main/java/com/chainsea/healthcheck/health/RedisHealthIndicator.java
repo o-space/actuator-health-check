@@ -26,4 +26,3 @@ public class RedisHealthIndicator extends AbstractHealthIndicator {
         }
     }
 }
-

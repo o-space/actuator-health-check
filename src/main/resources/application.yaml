@@ -32,6 +32,15 @@ spring:
 monitoring:
   mock-server-url: http://localhost:18080/health
 
+health-check:
+  critical-services:
+    - postgres
+    - redis
+  non-critical-services:
+    - rabbitmq
+    - mongodb
+    - mockWebServer
+
 management:
   endpoints:
     web:
@@ -44,14 +53,15 @@ management:
       show-details: always
       probes:
         enabled: true
+      status:
+        http-mapping:
+          DEGRADED: 200
       group:
         readiness:
           include:
-            - postgres
-            - redis
-            - rabbitmq
-            - mongodb
-            - mockWebServer
+            - degradedReadiness
+          status:
+            order: DOWN, DEGRADED, UP
   health:
     defaults:
       enabled: false
