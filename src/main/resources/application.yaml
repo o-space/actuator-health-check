@@ -34,13 +34,17 @@ monitoring:
 
 health-check:
   critical-services:
-    - postgres
-    - redis
+    - name: postgres
+      interval: 5000
+    - name: redis
+      interval: 5000
   non-critical-services:
-    - rabbitmq
-    - mongodb
-    - mockWebServer
-  schedule-interval: 10000
+    - name: rabbitmq
+      interval: 10000
+    - name: mongodb
+      interval: 10000
+    - name: mockWebServer
+      interval: 15000
 
 management:
   endpoints:

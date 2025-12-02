@@ -1,32 +1,61 @@
 package com.chainsea.healthcheck.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-@Component
 @ConfigurationProperties(prefix = "health-check")
-public class HealthCheckProperties {
-
-    private Set<String> criticalServices = new HashSet<>();
-    private Set<String> nonCriticalServices = new HashSet<>();
-
-    public Set<String> getCriticalServices() {
-        return criticalServices;
+public record HealthCheckProperties(
+        List<ServiceConfig> criticalServices,
+        List<ServiceConfig> nonCriticalServices
+) {
+    public HealthCheckProperties {
+        if (criticalServices == null) {
+            criticalServices = new ArrayList<>();
+        } else {
+            criticalServices = new ArrayList<>(criticalServices);
+        }
+        if (nonCriticalServices == null) {
+            nonCriticalServices = new ArrayList<>();
+        } else {
+            nonCriticalServices = new ArrayList<>(nonCriticalServices);
+        }
     }
 
-    public void setCriticalServices(Set<String> criticalServices) {
-        this.criticalServices = criticalServices;
+    public Set<String> getCriticalServiceNames() {
+        return criticalServices.stream()
+                .map(ServiceConfig::name)
+                .collect(Collectors.toSet());
     }
 
-    public Set<String> getNonCriticalServices() {
-        return nonCriticalServices;
+    public Set<String> getNonCriticalServiceNames() {
+        return nonCriticalServices.stream()
+                .map(ServiceConfig::name)
+                .collect(Collectors.toSet());
     }
 
-    public void setNonCriticalServices(Set<String> nonCriticalServices) {
-        this.nonCriticalServices = nonCriticalServices;
+    public Map<String, Long> getServiceIntervals() {
+        Map<String, Long> intervals = criticalServices.stream()
+                .collect(Collectors.toMap(ServiceConfig::name, ServiceConfig::interval));
+        nonCriticalServices.forEach(service ->
+                intervals.put(service.name(), service.interval()));
+        return intervals;
+    }
+
+    public Long getServiceInterval(String serviceName) {
+        return criticalServices.stream()
+                .filter(s -> s.name().equals(serviceName))
+                .findFirst()
+                .map(ServiceConfig::interval)
+                .orElseGet(() -> nonCriticalServices.stream()
+                        .filter(s -> s.name().equals(serviceName))
+                        .findFirst()
+                        .map(ServiceConfig::interval)
+                        .orElse(5000L));
     }
 }
 

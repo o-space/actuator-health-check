@@ -46,8 +46,8 @@ public class ReadinessHealthIndicator implements HealthIndicator {
     }
 
     private ServiceStatusSummary analyzeServiceStatus(Map<String, HealthStatusCache.CachedHealth> cachedHealths) {
-        Set<String> criticalServices = properties.getCriticalServices();
-        Set<String> nonCriticalServices = properties.getNonCriticalServices();
+        Set<String> criticalServices = properties.getCriticalServiceNames();
+        Set<String> nonCriticalServices = properties.getNonCriticalServiceNames();
 
         boolean hasCriticalFailure = false;
         boolean hasNonCriticalFailure = false;
