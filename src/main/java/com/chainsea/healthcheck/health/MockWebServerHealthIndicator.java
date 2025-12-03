@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.health;
 
+import com.chainsea.healthcheck.config.ConditionalOnServiceConfigured;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component("mockWebServer")
+@ConditionalOnServiceConfigured("mockWebServer")
 public class MockWebServerHealthIndicator extends AbstractHealthIndicator {
 
     private final RestClient restClient;

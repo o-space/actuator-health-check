@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.health;
 
+import com.chainsea.healthcheck.config.ConditionalOnServiceConfigured;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -8,6 +9,7 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Component;
 
 @Component("rabbitmq")
+@ConditionalOnServiceConfigured("rabbitmq")
 public class RabbitMqHealthIndicator extends AbstractHealthIndicator {
 
     private final ConnectionFactory connectionFactory;

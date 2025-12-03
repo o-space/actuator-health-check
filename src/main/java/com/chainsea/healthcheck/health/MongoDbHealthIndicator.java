@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.health;
 
+import com.chainsea.healthcheck.config.ConditionalOnServiceConfigured;
 import org.bson.Document;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
@@ -7,6 +8,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
 @Component("mongodb")
+@ConditionalOnServiceConfigured("mongodb")
 public class MongoDbHealthIndicator extends AbstractHealthIndicator {
 
     private final MongoTemplate mongoTemplate;
@@ -20,7 +22,7 @@ public class MongoDbHealthIndicator extends AbstractHealthIndicator {
         try {
             Document result = mongoTemplate.getDb().runCommand(Document.parse("{ ping: 1 }"));
             Object ok = result.get("ok");
-            if (ok instanceof Number && ((Number) ok).doubleValue() == 1.0) {
+            if (ok instanceof Number number && number.doubleValue() == 1.0) {
                 builder.up();
             } else {
                 builder.down().withDetail("error", "Unexpected ping response: " + ok);

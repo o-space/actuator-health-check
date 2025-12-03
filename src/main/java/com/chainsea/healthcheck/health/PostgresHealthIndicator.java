@@ -1,11 +1,13 @@
 package com.chainsea.healthcheck.health;
 
+import com.chainsea.healthcheck.config.ConditionalOnServiceConfigured;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component("postgres")
+@ConditionalOnServiceConfigured("postgres")
 public class PostgresHealthIndicator extends AbstractHealthIndicator {
 
     private final JdbcTemplate jdbcTemplate;

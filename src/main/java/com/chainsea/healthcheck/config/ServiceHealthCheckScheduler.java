@@ -91,5 +91,9 @@ public class ServiceHealthCheckScheduler implements InitializingBean, Disposable
             healthStatusCache.updateHealth(serviceName, downHealth);
         }
     }
+
+    public String getServiceName() {
+        return serviceName;
+    }
 }
 

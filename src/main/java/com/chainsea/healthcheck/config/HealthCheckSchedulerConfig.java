@@ -1,78 +1,76 @@
 package com.chainsea.healthcheck.config;
 
 import com.chainsea.healthcheck.health.HealthStatusCache;
-import com.chainsea.healthcheck.health.MockWebServerHealthIndicator;
-import com.chainsea.healthcheck.health.MongoDbHealthIndicator;
-import com.chainsea.healthcheck.health.PostgresHealthIndicator;
-import com.chainsea.healthcheck.health.RabbitMqHealthIndicator;
-import com.chainsea.healthcheck.health.RedisHealthIndicator;
-import org.springframework.context.annotation.Bean;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 @Configuration
 public class HealthCheckSchedulerConfig {
 
-    @Bean
-    public TaskScheduler healthCheckTaskScheduler() {
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(10);
-        scheduler.setThreadNamePrefix("health-check-");
-        scheduler.setWaitForTasksToCompleteOnShutdown(true);
-        scheduler.setAwaitTerminationSeconds(60);
-        scheduler.initialize();
-        return scheduler;
+    private static final Logger logger = LoggerFactory.getLogger(HealthCheckSchedulerConfig.class);
+
+    private final ApplicationContext applicationContext;
+    private final HealthCheckProperties properties;
+    private final HealthStatusCache healthStatusCache;
+    private final TaskScheduler taskScheduler;
+    private final List<ServiceHealthCheckScheduler> schedulers = new ArrayList<>();
+
+    public HealthCheckSchedulerConfig(ApplicationContext applicationContext,
+                                      HealthCheckProperties properties,
+                                      HealthStatusCache healthStatusCache,
+                                      TaskScheduler healthCheckTaskScheduler) {
+        this.applicationContext = applicationContext;
+        this.properties = properties;
+        this.healthStatusCache = healthStatusCache;
+        this.taskScheduler = healthCheckTaskScheduler;
     }
 
-    @Bean
-    public ServiceHealthCheckScheduler postgresHealthCheckScheduler(
-            HealthStatusCache healthStatusCache,
-            PostgresHealthIndicator postgresHealthIndicator,
-            HealthCheckProperties properties,
-            TaskScheduler taskScheduler) {
-        long interval = properties.getServiceInterval("postgres");
-        return new ServiceHealthCheckScheduler("postgres", postgresHealthIndicator, healthStatusCache, interval, taskScheduler);
+    @PostConstruct
+    public void createSchedulers() {
+        Set<String> allServiceNames = properties.getCriticalServiceNames();
+        allServiceNames.addAll(properties.getNonCriticalServiceNames());
+
+        for (String serviceName : allServiceNames) {
+            try {
+                HealthIndicator healthIndicator = applicationContext.getBean(serviceName, HealthIndicator.class);
+                long interval = properties.getServiceInterval(serviceName);
+
+                ServiceHealthCheckScheduler scheduler = new ServiceHealthCheckScheduler(
+                        serviceName,
+                        healthIndicator,
+                        healthStatusCache,
+                        interval,
+                        taskScheduler
+                );
+
+                schedulers.add(scheduler);
+                scheduler.afterPropertiesSet();
+                logger.info("Created health check scheduler for service: {} with interval: {}ms", serviceName, interval);
+            } catch (NoSuchBeanDefinitionException e) {
+                logger.warn("HealthIndicator bean '{}' not found, skipping scheduler creation", serviceName);
+            }
+        }
     }
 
-    @Bean
-    public ServiceHealthCheckScheduler redisHealthCheckScheduler(
-            HealthStatusCache healthStatusCache,
-            RedisHealthIndicator redisHealthIndicator,
-            HealthCheckProperties properties,
-            TaskScheduler taskScheduler) {
-        long interval = properties.getServiceInterval("redis");
-        return new ServiceHealthCheckScheduler("redis", redisHealthIndicator, healthStatusCache, interval, taskScheduler);
-    }
-
-    @Bean
-    public ServiceHealthCheckScheduler rabbitmqHealthCheckScheduler(
-            HealthStatusCache healthStatusCache,
-            RabbitMqHealthIndicator rabbitMqHealthIndicator,
-            HealthCheckProperties properties,
-            TaskScheduler taskScheduler) {
-        long interval = properties.getServiceInterval("rabbitmq");
-        return new ServiceHealthCheckScheduler("rabbitmq", rabbitMqHealthIndicator, healthStatusCache, interval, taskScheduler);
-    }
-
-    @Bean
-    public ServiceHealthCheckScheduler mongodbHealthCheckScheduler(
-            HealthStatusCache healthStatusCache,
-            MongoDbHealthIndicator mongoDbHealthIndicator,
-            HealthCheckProperties properties,
-            TaskScheduler taskScheduler) {
-        long interval = properties.getServiceInterval("mongodb");
-        return new ServiceHealthCheckScheduler("mongodb", mongoDbHealthIndicator, healthStatusCache, interval, taskScheduler);
-    }
-
-    @Bean
-    public ServiceHealthCheckScheduler mockWebServerHealthCheckScheduler(
-            HealthStatusCache healthStatusCache,
-            MockWebServerHealthIndicator mockWebServerHealthIndicator,
-            HealthCheckProperties properties,
-            TaskScheduler taskScheduler) {
-        long interval = properties.getServiceInterval("mockWebServer");
-        return new ServiceHealthCheckScheduler("mockWebServer", mockWebServerHealthIndicator, healthStatusCache, interval, taskScheduler);
+    @PreDestroy
+    public void destroySchedulers() {
+        for (ServiceHealthCheckScheduler scheduler : schedulers) {
+            try {
+                scheduler.destroy();
+            } catch (Exception e) {
+                logger.warn("Error destroying scheduler for service: {}", scheduler.getServiceName(), e);
+            }
+        }
     }
 }
-
