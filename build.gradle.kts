@@ -43,14 +43,21 @@ tasks.withType<Test> {
     systemProperty("mockito.mock-maker", "mock-maker-inline")
 }
 
-// Default test task - exclude integration tests
-tasks.test {
+tasks.register<Test>("smokeTest") {
+    description = "Runs smoke tests"
+    group = "verification"
     useJUnitPlatform {
-        excludeTags("integration")
+        includeTags("smoke")
     }
 }
 
-// Integration test task - only run integration tests
+tasks.test {
+    useJUnitPlatform {
+        excludeTags("smoke", "integration")
+    }
+    dependsOn("smokeTest")
+}
+
 tasks.register<Test>("integrationTest") {
     description = "Runs integration tests"
     group = "verification"
