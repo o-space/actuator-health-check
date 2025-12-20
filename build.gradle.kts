@@ -72,7 +72,7 @@ dependencyCheck {
     // Fail build if CVSS score is 7.0 or higher
     failBuildOnCVSS = 7.0f
     formats = listOf("HTML", "JSON", "XML")
-    suppressionFile = "dependency-check-suppressions.xml"
+    suppressionFile = "config/dependency-check-suppressions.xml"
 
     analyzers {
         assemblyEnabled = false
