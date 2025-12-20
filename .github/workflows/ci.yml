@@ -37,7 +37,7 @@ jobs:
           path: build/test-results/smokeTest/
           retention-days: 7
 
-  test:
+  unit-test:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: smoke-test
@@ -69,7 +69,6 @@ jobs:
   integration-test:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
