@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 @Configuration
+@ConditionalOnProperty(name = "health-check.scheduler.enabled", havingValue = "true", matchIfMissing = true)
 public class HealthCheckSchedulerConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckSchedulerConfig.class);

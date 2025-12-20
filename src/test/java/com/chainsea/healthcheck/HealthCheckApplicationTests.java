@@ -8,7 +8,8 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb",
         "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.flyway.enabled=false"
+        "spring.flyway.enabled=false",
+        "health-check.scheduler.enabled=false"
 })
 class HealthCheckApplicationTests {
 

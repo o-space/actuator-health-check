@@ -6,3 +6,12 @@ GET http://localhost:8080/actuator/health/liveness
 
 ### Readiness
 GET http://localhost:8080/actuator/health/readiness
+
+### Health Check
+POST http://localhost:8080/api/health-checks
+Content-Type: application/json
+
+{
+  "serviceName": "test-service",
+  "url": "http://localhost:18080/health"
+}

@@ -49,6 +49,8 @@ health-check:
       interval: 10000
     - name: mockWebServer
       interval: 15000
+  scheduler:
+    enabled: true
 
 management:
   endpoints:

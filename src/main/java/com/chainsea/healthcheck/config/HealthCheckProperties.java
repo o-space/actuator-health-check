@@ -11,7 +11,8 @@ import java.util.stream.Collectors;
 @ConfigurationProperties(prefix = "health-check")
 public record HealthCheckProperties(
         List<ServiceConfig> criticalServices,
-        List<ServiceConfig> nonCriticalServices
+        List<ServiceConfig> nonCriticalServices,
+        SchedulerConfig scheduler
 ) {
     public HealthCheckProperties {
         if (criticalServices == null) {

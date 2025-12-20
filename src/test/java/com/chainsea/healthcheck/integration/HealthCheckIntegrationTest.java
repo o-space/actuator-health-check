@@ -37,7 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.sql.init.mode=always",
         "spring.sql.init.schema-locations=classpath:schema-h2.sql",
         "spring.jpa.show-sql=true",
-        "spring.flyway.enabled=false"
+        "spring.flyway.enabled=false",
+        "health-check.scheduler.enabled=false"
 })
 class HealthCheckIntegrationTest {
 
