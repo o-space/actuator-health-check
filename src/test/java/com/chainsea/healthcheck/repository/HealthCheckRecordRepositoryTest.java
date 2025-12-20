@@ -38,7 +38,7 @@ class HealthCheckRecordRepositoryTest {
     }
 
     @Test
-    void shouldSaveAndFindHealthCheckRecord() {
+    void shouldReturnSavedRecordGivenHealthCheckRecordWhenSavingAndFinding() {
         // Given
         HealthCheckRecord healthCheckRecord = new HealthCheckRecord("test-service", "UP", createDetails("Service is healthy"), 150L);
 
@@ -56,7 +56,7 @@ class HealthCheckRecordRepositoryTest {
     }
 
     @Test
-    void shouldFindRecordsByServiceName() {
+    void shouldReturnRecordsGivenServiceNameWhenFindingByServiceName() {
         // Given
         repository.save(new HealthCheckRecord("service1", "UP", createDetails("OK"), 100L));
         repository.save(new HealthCheckRecord("service1", "DOWN", createDetails("Error"), 200L));
@@ -72,7 +72,7 @@ class HealthCheckRecordRepositoryTest {
     }
 
     @Test
-    void shouldFindRecordsByStatus() {
+    void shouldReturnRecordsGivenStatusWhenFindingByStatus() {
         // Given
         repository.save(new HealthCheckRecord("service1", "UP", createDetails("OK"), 100L));
         repository.save(new HealthCheckRecord("service2", "DOWN", createDetails("Error"), 200L));
@@ -88,7 +88,7 @@ class HealthCheckRecordRepositoryTest {
     }
 
     @Test
-    void shouldFindRecentRecords() {
+    void shouldReturnRecentRecordsGivenTimeWindowWhenFindingRecentRecords() {
         // Given
         LocalDateTime now = LocalDateTime.now();
         HealthCheckRecord oldRecord = new HealthCheckRecord("service1", "UP", createDetails("OK"), 100L);
@@ -113,7 +113,7 @@ class HealthCheckRecordRepositoryTest {
     }
 
     @Test
-    void shouldFindLatestRecordByServiceName() {
+    void shouldReturnLatestRecordGivenServiceNameWhenFindingLatestRecord() {
         // Given
         HealthCheckRecord record1 = new HealthCheckRecord("service1", "UP", createDetails("OK"), 100L);
         record1.setCheckedAt(LocalDateTime.now().minusHours(2));
@@ -137,7 +137,7 @@ class HealthCheckRecordRepositoryTest {
     }
 
     @Test
-    void shouldCountRecordsByServiceNameAndStatus() {
+    void shouldReturnCountGivenServiceNameAndStatusWhenCountingRecords() {
         // Given
         repository.save(new HealthCheckRecord("service1", "UP", createDetails("OK"), 100L));
         repository.save(new HealthCheckRecord("service1", "DOWN", createDetails("Error"), 200L));
@@ -152,7 +152,7 @@ class HealthCheckRecordRepositoryTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenNoRecordsFound() {
+    void shouldReturnEmptyGivenNonExistentServiceNameWhenFindingLatestRecord() {
         // When
         Optional<HealthCheckRecord> latest = repository.findFirstByServiceNameOrderByCheckedAtDesc("non-existent");
 

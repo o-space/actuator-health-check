@@ -27,7 +27,7 @@ class ServiceHealthCheckControllerTest {
     private HealthCheckService healthCheckService;
 
     @Test
-    void shouldGetServiceHealthChecks() throws Exception {
+    void shouldReturnServiceHealthChecksGivenServiceNameWhenGettingServiceHealthChecks() throws Exception {
         // Given
         String serviceName = "test-service";
         List<HealthCheckRecord> history = List.of(
@@ -46,7 +46,7 @@ class ServiceHealthCheckControllerTest {
     }
 
     @Test
-    void shouldGetLatestServiceHealthCheck() throws Exception {
+    void shouldReturnLatestHealthCheckGivenServiceNameWhenGettingLatestServiceHealthCheck() throws Exception {
         // Given
         String serviceName = "test-service";
         HealthCheckRecord latest = new HealthCheckRecord(serviceName, "UP", Map.of("message", "OK"), 100L);
@@ -60,7 +60,7 @@ class ServiceHealthCheckControllerTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenNoLatestServiceHealthCheck() throws Exception {
+    void shouldReturnNotFoundGivenNonExistentServiceWhenGettingLatestServiceHealthCheck() throws Exception {
         // Given
         String serviceName = "non-existent-service";
         when(healthCheckService.getLatestHealthCheck(serviceName)).thenReturn(Optional.empty());
@@ -71,7 +71,7 @@ class ServiceHealthCheckControllerTest {
     }
 
     @Test
-    void shouldGetServiceStats() throws Exception {
+    void shouldReturnServiceStatsGivenServiceNameWhenGettingServiceStats() throws Exception {
         // Given
         String serviceName = "test-service";
         HealthCheckRecord latest = new HealthCheckRecord(serviceName, "UP", Map.of("message", "OK"), 100L);

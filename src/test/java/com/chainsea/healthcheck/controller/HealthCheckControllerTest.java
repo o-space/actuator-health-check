@@ -36,7 +36,7 @@ class HealthCheckControllerTest {
     private HealthCheckService healthCheckService;
 
     @Test
-    void shouldPerformHealthCheck() throws Exception {
+    void shouldReturnCreatedHealthCheckRecordGivenValidRequestWhenPostingHealthCheck() throws Exception {
         // Given
         URL url = URI.create("http://example.com/health").toURL();
         HealthCheckRequest request = new HealthCheckRequest("test-service", url);
@@ -67,7 +67,7 @@ class HealthCheckControllerTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenServiceNameIsBlank() throws Exception {
+    void shouldReturnBadRequestGivenBlankServiceNameWhenPostingHealthCheck() throws Exception {
         // Given - blank serviceName
         URL url = URI.create("http://example.com/health").toURL();
         HealthCheckRequest request = new HealthCheckRequest("", url);
@@ -92,7 +92,7 @@ class HealthCheckControllerTest {
     }
 
     @Test
-    void shouldGetHealthCheckById() throws Exception {
+    void shouldReturnHealthCheckRecordGivenValidIdWhenGettingHealthCheckById() throws Exception {
         // Given
         Long id = 1L;
         Map<String, Object> details = Map.of("message", "OK");
@@ -109,7 +109,7 @@ class HealthCheckControllerTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenHealthCheckNotFound() throws Exception {
+    void shouldReturnNotFoundGivenNonExistentIdWhenGettingHealthCheckById() throws Exception {
         // Given
         Long id = 999L;
         when(healthCheckService.getHealthCheckById(id)).thenReturn(Optional.empty());
@@ -141,7 +141,7 @@ class HealthCheckControllerTest {
     }
 
     @Test
-    void shouldGetHealthChecksWithServiceNameAndHoursFilter() throws Exception {
+    void shouldReturnHealthChecksGivenServiceNameAndHoursFilterWhenGettingHealthChecks() throws Exception {
         // Given
         String serviceName = "test-service";
         int hours = 12;
@@ -159,7 +159,7 @@ class HealthCheckControllerTest {
     }
 
     @Test
-    void shouldGetHealthChecksWithHoursFilter() throws Exception {
+    void shouldReturnHealthChecksGivenHoursFilterWhenGettingHealthChecks() throws Exception {
         // Given
         List<HealthCheckRecord> recent = List.of(
                 new HealthCheckRecord("service1", "UP", Map.of("message", "OK"), 100L),
@@ -177,7 +177,7 @@ class HealthCheckControllerTest {
     }
 
     @Test
-    void shouldGetHealthChecksWithDefaultHours() throws Exception {
+    void shouldReturnHealthChecksGivenNoParametersWhenGettingHealthChecks() throws Exception {
         // Given
         List<HealthCheckRecord> recent = List.of();
         when(healthCheckService.getHealthChecks(24)).thenReturn(recent);

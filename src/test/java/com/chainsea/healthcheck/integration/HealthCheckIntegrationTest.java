@@ -98,7 +98,7 @@ class HealthCheckIntegrationTest {
     }
 
     @Test
-    void shouldPerformHealthCheckWithRealExternalApi() throws Exception {
+    void shouldReturnHealthCheckRecordGivenValidExternalApiWhenPerformingHealthCheck() throws Exception {
         // Given
         String serviceName = "wiremock-service";
         URL healthCheckUrl = URI.create("http://localhost:" + wiremockContainer.getMappedPort(8080) + "/health").toURL();
@@ -119,7 +119,7 @@ class HealthCheckIntegrationTest {
     }
 
     @Test
-    void shouldHandleFailedExternalApiCall() throws Exception {
+    void shouldReturnDownStatusGivenInvalidUrlWhenPerformingHealthCheck() throws Exception {
         // Given
         String serviceName = "non-existent-service";
         URL invalidUrl = URI.create("http://localhost:" + wiremockContainer.getMappedPort(8080) + "/non-existent").toURL();
@@ -155,7 +155,7 @@ class HealthCheckIntegrationTest {
     }
 
     @Test
-    void shouldGetLatestHealthCheckFromDatabase() throws Exception {
+    void shouldReturnLatestHealthCheckGivenMultipleChecksWhenGettingLatestFromDatabase() throws Exception {
         // Given
         String serviceName = "test-service";
         URL healthCheckUrl = URI.create("http://localhost:" + wiremockContainer.getMappedPort(8080) + "/health").toURL();
@@ -172,7 +172,7 @@ class HealthCheckIntegrationTest {
     }
 
     @Test
-    void shouldCountFailuresInDatabase() {
+    void shouldReturnFailureCountGivenMultipleRecordsWhenCountingFailuresInDatabase() {
         // Given
         String serviceName = "test-service";
         Map<String, Object> details1 = Map.of("message", "OK");
@@ -189,7 +189,7 @@ class HealthCheckIntegrationTest {
     }
 
     @Test
-    void shouldGetRecentHealthChecksFromDatabase() {
+    void shouldReturnRecentHealthChecksGivenTimeWindowWhenGettingRecentFromDatabase() {
         // Given
         String serviceName = "test-service";
         Map<String, Object> details = Map.of("message", "OK");

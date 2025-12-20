@@ -54,7 +54,7 @@ class HealthCheckServiceTest {
     }
 
     @Test
-    void shouldPerformSuccessfulHealthCheck() throws Exception {
+    void shouldReturnUpStatusGivenSuccessfulResponseWhenCheckingHealth() throws Exception {
         // Given
         String serviceName = "test-service";
         URL url = URI.create("http://example.com/health").toURL();
@@ -78,7 +78,7 @@ class HealthCheckServiceTest {
     }
 
     @Test
-    void shouldHandleFailedHealthCheck() throws Exception {
+    void shouldReturnDownStatusGivenExceptionWhenCheckingHealth() throws Exception {
         // Given
         String serviceName = "test-service";
         URL url = URI.create("http://example.com/health").toURL();
@@ -101,7 +101,7 @@ class HealthCheckServiceTest {
     }
 
     @Test
-    void shouldHandleNonOkResponse() throws Exception {
+    void shouldReturnDegradedStatusGivenNonOkResponseWhenCheckingHealth() throws Exception {
         // Given
         String serviceName = "test-service";
         URL url = URI.create("http://example.com/health").toURL();
@@ -125,7 +125,7 @@ class HealthCheckServiceTest {
     }
 
     @Test
-    void shouldGetHealthCheckHistory() {
+    void shouldReturnHealthCheckHistoryGivenServiceNameWhenGettingHealthChecks() {
         // Given
         String serviceName = "test-service";
         List<HealthCheckRecord> history = List.of(
@@ -143,7 +143,7 @@ class HealthCheckServiceTest {
     }
 
     @Test
-    void shouldGetLatestHealthCheck() {
+    void shouldReturnLatestHealthCheckGivenServiceNameWhenGettingLatestHealthCheck() {
         // Given
         String serviceName = "test-service";
         HealthCheckRecord latest = new HealthCheckRecord(serviceName, "UP", Map.of("status", "OK"), 100L);
@@ -159,7 +159,7 @@ class HealthCheckServiceTest {
     }
 
     @Test
-    void shouldGetRecentHealthChecks() {
+    void shouldReturnRecentHealthChecksGivenHoursWhenGettingRecentHealthChecks() {
         // Given
         int hours = 24;
         List<HealthCheckRecord> recent = List.of(
@@ -177,7 +177,7 @@ class HealthCheckServiceTest {
     }
 
     @Test
-    void shouldGetFailureCount() {
+    void shouldReturnFailureCountGivenServiceNameWhenGettingFailureCount() {
         // Given
         String serviceName = "test-service";
         long failureCount = 5L;
