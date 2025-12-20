@@ -94,6 +94,34 @@ jobs:
           path: build/test-results/integrationTest/
           retention-days: 7
 
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for better scanning
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          report-format: json
+          report-path: gitleaks-report.json
+          verbose: true
+          redact: false  # Set to true in production to redact secrets from logs
+
+      - name: Upload Gitleaks report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+          retention-days: 7
+          if-no-files-found: ignore
+
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest

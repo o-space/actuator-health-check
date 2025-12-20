@@ -1,0 +1,21 @@
+# Ignore test files and mock data
+**/test/**
+**/mock-server/**
+**/*Test.java
+**/*Tests.java
+
+# Ignore documentation examples
+**/docs/**
+**/*.md
+
+# Ignore build outputs
+**/build/**
+**/target/**
+
+# Ignore configuration files with example values
+**/application*.yaml
+**/application*.yml
+**/application*.properties
+
+# Ignore specific patterns that are false positives
+# Add your own patterns here if needed
