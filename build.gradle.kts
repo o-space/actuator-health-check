@@ -2,6 +2,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.7"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.owasp.dependencycheck") version "12.1.9"
 }
 
 group = "com.chainsea"
@@ -65,4 +66,21 @@ tasks.register<Test>("integrationTest") {
         includeTags("integration")
     }
     shouldRunAfter(tasks.test)
+}
+
+dependencyCheck {
+    // Fail build if CVSS score is 7.0 or higher
+    failBuildOnCVSS = 7.0f
+    formats = listOf("HTML", "JSON", "XML")
+    suppressionFile = "dependency-check-suppressions.xml"
+
+    analyzers {
+        assemblyEnabled = false
+        nuspecEnabled = false
+        nodeEnabled = false
+        nodeAuditEnabled = false
+    }
+
+    // Auto-update the NVD data (can be disabled for CI)
+    autoUpdate = true
 }
