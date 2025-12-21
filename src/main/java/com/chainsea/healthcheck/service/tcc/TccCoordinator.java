@@ -23,20 +23,19 @@ public class TccCoordinator {
 
     private static final Logger logger = LoggerFactory.getLogger(TccCoordinator.class);
 
-    private final TccParticipant postgresParticipant;
-    private final TccParticipant redisParticipant;
-    private final TccParticipant mongodbParticipant;
-    private final TccParticipant rabbitmqParticipant;
+    private final List<TccParticipant> participants;
 
     public TccCoordinator(
             PostgresTccParticipant postgresParticipant,
             RedisTccParticipant redisParticipant,
             MongoDbTccParticipant mongodbParticipant,
             RabbitMqTccParticipant rabbitmqParticipant) {
-        this.postgresParticipant = postgresParticipant;
-        this.redisParticipant = redisParticipant;
-        this.mongodbParticipant = mongodbParticipant;
-        this.rabbitmqParticipant = rabbitmqParticipant;
+        participants = List.of(
+                postgresParticipant,
+                redisParticipant,
+                mongodbParticipant,
+                rabbitmqParticipant
+        );
     }
 
     /**
@@ -80,31 +79,13 @@ public class TccCoordinator {
     private boolean tryPhase(String transactionId, String taskId, List<String> serviceNames) {
         logger.info("Phase 1: Try phase started for transaction: {}", transactionId);
 
-        boolean allTried = true;
-
-        // Try PostgreSQL
-        if (!postgresParticipant.tryExecute(transactionId, taskId, serviceNames)) {
-            logger.error("PostgreSQL participant failed to try");
-            allTried = false;
-        }
-
-        // Try Redis
-        if (!redisParticipant.tryExecute(transactionId, taskId, serviceNames)) {
-            logger.error("Redis participant failed to try");
-            allTried = false;
-        }
-
-        // Try MongoDB
-        if (!mongodbParticipant.tryExecute(transactionId, taskId, serviceNames)) {
-            logger.error("MongoDB participant failed to try");
-            allTried = false;
-        }
-
-        // Try RabbitMQ
-        if (!rabbitmqParticipant.tryExecute(transactionId, taskId, serviceNames)) {
-            logger.error("RabbitMQ participant failed to try");
-            allTried = false;
-        }
+        boolean allTried = participants.stream().allMatch(p -> {
+            boolean tried = p.tryExecute(transactionId, taskId, serviceNames);
+            if (!tried) {
+                logger.error("{} failed to try", p.getClass().getSimpleName());
+            }
+            return tried;
+        });
 
         if (allTried) {
             logger.info("Phase 1: All participants tried successfully");
@@ -121,31 +102,13 @@ public class TccCoordinator {
     private boolean confirmPhase(String transactionId) {
         logger.info("Phase 2: Confirm phase started for transaction: {}", transactionId);
 
-        boolean allConfirmed = true;
-
-        // Confirm PostgreSQL
-        if (!postgresParticipant.confirm(transactionId)) {
-            logger.error("PostgreSQL participant failed to confirm");
-            allConfirmed = false;
-        }
-
-        // Confirm Redis
-        if (!redisParticipant.confirm(transactionId)) {
-            logger.error("Redis participant failed to confirm");
-            allConfirmed = false;
-        }
-
-        // Confirm MongoDB
-        if (!mongodbParticipant.confirm(transactionId)) {
-            logger.error("MongoDB participant failed to confirm");
-            allConfirmed = false;
-        }
-
-        // Confirm RabbitMQ
-        if (!rabbitmqParticipant.confirm(transactionId)) {
-            logger.error("RabbitMQ participant failed to confirm");
-            allConfirmed = false;
-        }
+        boolean allConfirmed = participants.stream().allMatch(p -> {
+            boolean confirmed = p.confirm(transactionId);
+            if (!confirmed) {
+                logger.error("{} failed to confirm", p.getClass().getSimpleName());
+            }
+            return confirmed;
+        });
 
         if (allConfirmed) {
             logger.info("Phase 2: All participants confirmed successfully");
@@ -163,10 +126,7 @@ public class TccCoordinator {
         logger.info("Cancel phase started for transaction: {}", transactionId);
 
         // Cancel in reverse order
-        rabbitmqParticipant.cancel(transactionId);
-        mongodbParticipant.cancel(transactionId);
-        redisParticipant.cancel(transactionId);
-        postgresParticipant.cancel(transactionId);
+        participants.reversed().forEach(p -> p.cancel(transactionId));
 
         logger.info("Cancel phase completed for transaction: {}", transactionId);
     }

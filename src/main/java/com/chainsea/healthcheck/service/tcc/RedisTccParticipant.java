@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.service.tcc;
 
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -35,12 +36,12 @@ public class RedisTccParticipant implements TccParticipant {
         try {
             logger.info("Redis TCC: Trying transaction {}", transactionId);
             String statusKey = KEY_PREFIX + taskId;
-            String lockKey = LOCK_PREFIX + taskId;
+            String lockKey = getLockKey(taskId);
 
             // Try to acquire lock and set reserved status
             Boolean lockAcquired = redisTemplate.opsForValue().setIfAbsent(lockKey, transactionId, 10, TimeUnit.MINUTES);
             if (Boolean.TRUE.equals(lockAcquired)) {
-                redisTemplate.opsForValue().set(statusKey, "RESERVED", 10, TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(statusKey, TaskStatus.RESERVED.name(), 10, TimeUnit.MINUTES);
                 reservedKeys.put(transactionId, statusKey);
                 logger.info("Redis TCC: Tried transaction {} successfully", transactionId);
                 return true;
@@ -65,9 +66,9 @@ public class RedisTccParticipant implements TccParticipant {
             }
 
             // Change status from RESERVED to COMPLETED
-            redisTemplate.opsForValue().set(statusKey, "COMPLETED", 1, TimeUnit.HOURS);
-            String taskId = statusKey.replace(KEY_PREFIX, "");
-            String lockKey = LOCK_PREFIX + taskId;
+            redisTemplate.opsForValue().set(statusKey, TaskStatus.COMPLETED.name(), 1, TimeUnit.HOURS);
+            String taskId = getTaskId(statusKey);
+            String lockKey = getLockKey(taskId);
             redisTemplate.delete(lockKey);
             reservedKeys.remove(transactionId);
 
@@ -85,8 +86,8 @@ public class RedisTccParticipant implements TccParticipant {
             logger.info("Redis TCC: Cancelling transaction {}", transactionId);
             String statusKey = reservedKeys.remove(transactionId);
             if (statusKey != null) {
-                String taskId = statusKey.replace(KEY_PREFIX, "");
-                String lockKey = LOCK_PREFIX + taskId;
+                String taskId = getTaskId(statusKey);
+                String lockKey = getLockKey(taskId);
                 redisTemplate.delete(statusKey);
                 redisTemplate.delete(lockKey);
             }
@@ -94,5 +95,13 @@ public class RedisTccParticipant implements TccParticipant {
         } catch (Exception e) {
             logger.error("Redis TCC: Failed to cancel transaction {}", transactionId, e);
         }
+    }
+
+    private static String getTaskId(String statusKey) {
+        return statusKey.replace(KEY_PREFIX, "");
+    }
+
+    private static String getLockKey(String taskId) {
+        return LOCK_PREFIX + taskId;
     }
 }

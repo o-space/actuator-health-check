@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.service.tcc;
 
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ public class MongoDbTccParticipant implements TccParticipant {
             logDoc.append("transactionId", transactionId);
             logDoc.append("taskId", taskId);
             logDoc.append("serviceNames", serviceNames);
-            logDoc.append("status", "RESERVED");
+            logDoc.append("status", TaskStatus.RESERVED);
             logDoc.append("createdAt", Instant.now());
 
             Document saved = mongoTemplate.insert(logDoc, COLLECTION);
@@ -69,7 +70,7 @@ public class MongoDbTccParticipant implements TccParticipant {
             }
 
             mongoTemplate.updateFirst(
-                    query(where("_id").is(new ObjectId(documentId))), update("status", "COMPLETED").set("completedAt", Instant.now()),
+                    query(where("_id").is(new ObjectId(documentId))), update("status", TaskStatus.COMPLETED).set("completedAt", Instant.now()),
                     COLLECTION);
 
             reservedDocumentIds.remove(transactionId);

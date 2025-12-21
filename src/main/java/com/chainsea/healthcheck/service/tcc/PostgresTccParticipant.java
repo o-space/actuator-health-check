@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,7 +59,7 @@ public class PostgresTccParticipant implements TccParticipant {
 
             BatchHealthCheckTask task = repository.findById(taskId).orElseThrow(() -> new IllegalStateException("Task not found: " + taskId));
             task.setStatus(TaskStatus.COMPLETED);
-            task.setCompletedAt(java.time.LocalDateTime.now());
+            task.setCompletedAt(LocalDateTime.now());
             repository.save(task);
             reservedTaskIds.remove(transactionId);
 

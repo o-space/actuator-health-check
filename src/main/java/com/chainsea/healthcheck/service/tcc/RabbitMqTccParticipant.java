@@ -1,11 +1,12 @@
 package com.chainsea.healthcheck.service.tcc;
 
+import com.chainsea.healthcheck.model.MqMessageData;
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,7 +27,7 @@ public class RabbitMqTccParticipant implements TccParticipant {
     // Note: Exchange and queue should be configured via RabbitMqConfig
 
     private final RabbitTemplate rabbitTemplate;
-    private final Map<String, MessageData> reservedMessages = new ConcurrentHashMap<>();
+    private final Map<String, MqMessageData> reservedMessages = new ConcurrentHashMap<>();
 
     public RabbitMqTccParticipant(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
@@ -37,7 +38,7 @@ public class RabbitMqTccParticipant implements TccParticipant {
         try {
             logger.info("RabbitMQ TCC: Trying transaction {}", transactionId);
             // Prepare message but don't send yet
-            MessageData messageData = new MessageData(taskId, serviceNames, "RESERVED");
+            MqMessageData messageData = new MqMessageData(taskId, serviceNames, TaskStatus.RESERVED);
             reservedMessages.put(transactionId, messageData);
             logger.info("RabbitMQ TCC: Tried transaction {} successfully", transactionId);
             return true;
@@ -51,14 +52,14 @@ public class RabbitMqTccParticipant implements TccParticipant {
     public boolean confirm(String transactionId) {
         try {
             logger.info("RabbitMQ TCC: Confirming transaction {}", transactionId);
-            MessageData messageData = reservedMessages.get(transactionId);
+            MqMessageData messageData = reservedMessages.get(transactionId);
             if (messageData == null) {
                 logger.error("RabbitMQ TCC: No reserved message found for transaction {}", transactionId);
                 return false;
             }
 
             // Actually send the message
-            messageData.setStatus("COMPLETED");
+            messageData.setStatus(TaskStatus.COMPLETED);
             rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, messageData);
             reservedMessages.remove(transactionId);
 
@@ -78,44 +79,6 @@ public class RabbitMqTccParticipant implements TccParticipant {
             logger.info("RabbitMQ TCC: Cancelled transaction {} successfully", transactionId);
         } catch (Exception e) {
             logger.error("RabbitMQ TCC: Failed to cancel transaction {}", transactionId, e);
-        }
-    }
-
-    private static class MessageData implements Serializable {
-        private static final long serialVersionUID = 1L;
-
-        private String taskId;
-        private List<String> serviceNames;
-        private String status;
-
-        public MessageData(String taskId, List<String> serviceNames, String status) {
-            this.taskId = taskId;
-            this.serviceNames = serviceNames;
-            this.status = status;
-        }
-
-        public String getTaskId() {
-            return taskId;
-        }
-
-        public void setTaskId(String taskId) {
-            this.taskId = taskId;
-        }
-
-        public List<String> getServiceNames() {
-            return serviceNames;
-        }
-
-        public void setServiceNames(List<String> serviceNames) {
-            this.serviceNames = serviceNames;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
         }
     }
 }
