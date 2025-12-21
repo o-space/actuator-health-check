@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.controller;
 
+import com.chainsea.healthcheck.controller.dto.BatchHealthCheckRequest;
 import com.chainsea.healthcheck.service.saga.SagaOrchestrator;
 import com.chainsea.healthcheck.service.tcc.TccCoordinator;
 import com.chainsea.healthcheck.service.twophase.TwoPhaseCommitCoordinator;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,21 +40,9 @@ public class BatchHealthCheckController {
      */
     @PostMapping("/2pc")
     public ResponseEntity<Map<String, Object>> createBatchTaskWith2PC(@RequestBody BatchHealthCheckRequest request) {
-        boolean success = twoPhaseCommitCoordinator.executeTransaction(
-                request.taskId(),
-                request.serviceNames()
-        );
-
-        Map<String, Object> response = Map.of(
-                "taskId", request.taskId(),
-                "pattern", "2PC",
-                "success", success,
-                "message", success ? "Transaction committed successfully" : "Transaction failed and rolled back"
-        );
-
-        return success
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(500).body(response);
+        boolean success = twoPhaseCommitCoordinator.executeTransaction(request.taskId(), request.serviceNames());
+        Map<String, Object> response = generateResponse(request.taskId(), "2PC", success, success ? "Transaction committed successfully" : "Transaction failed and rolled back");
+        return success ? ResponseEntity.ok(response) : ResponseEntity.status(500).body(response);
     }
 
     /**
@@ -65,21 +53,9 @@ public class BatchHealthCheckController {
      */
     @PostMapping("/tcc")
     public ResponseEntity<Map<String, Object>> createBatchTaskWithTCC(@RequestBody BatchHealthCheckRequest request) {
-        boolean success = tccCoordinator.executeTransaction(
-                request.taskId(),
-                request.serviceNames()
-        );
-
-        Map<String, Object> response = Map.of(
-                "taskId", request.taskId(),
-                "pattern", "TCC",
-                "success", success,
-                "message", success ? "Transaction confirmed successfully" : "Transaction failed and cancelled"
-        );
-
-        return success
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(500).body(response);
+        boolean success = tccCoordinator.executeTransaction(request.taskId(), request.serviceNames());
+        Map<String, Object> response = generateResponse(request.taskId(), "TCC", success, success ? "Transaction confirmed successfully" : "Transaction failed and cancelled");
+        return success ? ResponseEntity.ok(response) : ResponseEntity.status(500).body(response);
     }
 
     /**
@@ -90,29 +66,18 @@ public class BatchHealthCheckController {
      */
     @PostMapping("/saga")
     public ResponseEntity<Map<String, Object>> createBatchTaskWithSaga(@RequestBody BatchHealthCheckRequest request) {
-        boolean success = sagaOrchestrator.executeSaga(
-                request.taskId(),
-                request.serviceNames()
-        );
+        boolean success = sagaOrchestrator.executeSaga(request.taskId(), request.serviceNames());
+        Map<String, Object> response = generateResponse(request.taskId(), "Saga", success, success ? "Saga transaction completed successfully" : "Saga transaction failed and compensated");
+        return success ? ResponseEntity.ok(response) : ResponseEntity.status(500).body(response);
+    }
 
-        Map<String, Object> response = Map.of(
-                "taskId", request.taskId(),
-                "pattern", "Saga",
+    private static Map<String, Object> generateResponse(String taskId, String v2, boolean success, String message) {
+        return Map.of(
+                "taskId", taskId,
+                "pattern", v2,
                 "success", success,
-                "message", success ? "Saga transaction completed successfully" : "Saga transaction failed and compensated"
+                "message", message
         );
-
-        return success
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(500).body(response);
     }
 
-    /**
-     * Request DTO for batch health check.
-     */
-    public record BatchHealthCheckRequest(
-            String taskId,
-            List<String> serviceNames
-    ) {
-    }
 }

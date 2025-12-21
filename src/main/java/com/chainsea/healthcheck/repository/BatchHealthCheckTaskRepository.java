@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Repository for batch health check tasks.
- */
 @Repository
 public interface BatchHealthCheckTaskRepository extends JpaRepository<BatchHealthCheckTask, Long> {
     Optional<BatchHealthCheckTask> findByTaskId(String taskId);

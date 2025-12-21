@@ -8,19 +8,19 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Converter for List<String> to PostgreSQL TEXT[] array.
+ * Converter for List<String> to PostgreSQL TEXT.
  */
 @Converter
 public class StringListConverter implements AttributeConverter<List<String>, String> {
 
-    private static final String SPLIT_CHAR = ",";
+    private static final String COMMA = ",";
 
     @Override
     public String convertToDatabaseColumn(List<String> stringList) {
         if (stringList == null || stringList.isEmpty()) {
             return null;
         }
-        return String.join(SPLIT_CHAR, stringList);
+        return String.join(COMMA, stringList);
     }
 
     @Override
@@ -28,6 +28,6 @@ public class StringListConverter implements AttributeConverter<List<String>, Str
         if (string == null || string.isEmpty()) {
             return new ArrayList<>();
         }
-        return new ArrayList<>(Arrays.asList(string.split(SPLIT_CHAR)));
+        return new ArrayList<>(Arrays.asList(string.split(COMMA)));
     }
 }

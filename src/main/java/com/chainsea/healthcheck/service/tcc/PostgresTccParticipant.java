@@ -1,6 +1,7 @@
 package com.chainsea.healthcheck.service.tcc;
 
 import com.chainsea.healthcheck.model.BatchHealthCheckTask;
+import com.chainsea.healthcheck.model.TaskStatus;
 import com.chainsea.healthcheck.repository.BatchHealthCheckTaskRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public class PostgresTccParticipant implements TccParticipant {
             logger.info("PostgreSQL TCC: Trying transaction {}", transactionId);
             // Create task with RESERVED status (not committed yet)
             BatchHealthCheckTask task = new BatchHealthCheckTask(taskId, serviceNames);
-            task.setStatus("RESERVED");
+            task.setStatus(TaskStatus.RESERVED);
             BatchHealthCheckTask saved = repository.save(task);
             reservedTaskIds.put(transactionId, saved.getId());
             logger.info("PostgreSQL TCC: Tried transaction {} successfully, task ID: {}", transactionId, saved.getId());
@@ -56,7 +57,7 @@ public class PostgresTccParticipant implements TccParticipant {
             }
 
             BatchHealthCheckTask task = repository.findById(taskId).orElseThrow(() -> new IllegalStateException("Task not found: " + taskId));
-            task.setStatus("COMPLETED");
+            task.setStatus(TaskStatus.COMPLETED);
             task.setCompletedAt(java.time.LocalDateTime.now());
             repository.save(task);
             reservedTaskIds.remove(transactionId);
@@ -77,7 +78,7 @@ public class PostgresTccParticipant implements TccParticipant {
             if (taskId != null) {
                 BatchHealthCheckTask task = repository.findById(taskId).orElse(null);
                 if (task != null) {
-                    task.setStatus("CANCELLED");
+                    task.setStatus(TaskStatus.CANCELLED);
                     repository.save(task);
                 }
             }

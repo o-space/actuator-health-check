@@ -1,6 +1,7 @@
 package com.chainsea.healthcheck.service.saga;
 
 import com.chainsea.healthcheck.model.BatchHealthCheckTask;
+import com.chainsea.healthcheck.model.TaskStatus;
 import com.chainsea.healthcheck.repository.BatchHealthCheckTaskRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ public class PostgresSagaStep implements SagaStep {
             logger.info("PostgreSQL Saga: Executing step for task {}", taskId);
             // Execute local transaction - save immediately
             BatchHealthCheckTask task = new BatchHealthCheckTask(taskId, serviceNames);
-            task.setStatus("PROCESSING");
+            task.setStatus(TaskStatus.PROCESSING);
             BatchHealthCheckTask saved = repository.save(task);
 
             // Store task ID in context for compensation
@@ -58,7 +59,7 @@ public class PostgresSagaStep implements SagaStep {
             if (taskId != null) {
                 BatchHealthCheckTask task = repository.findById(taskId).orElse(null);
                 if (task != null) {
-                    task.setStatus("FAILED");
+                    task.setStatus(TaskStatus.FAILED);
                     repository.save(task);
                     logger.info("PostgreSQL Saga: Task {} marked as FAILED", taskId);
                 }
@@ -92,7 +93,7 @@ public class PostgresSagaStep implements SagaStep {
             }
 
             if (task != null) {
-                task.setStatus("COMPLETED");
+                task.setStatus(TaskStatus.COMPLETED);
                 task.setCompletedAt(java.time.LocalDateTime.now());
                 repository.save(task);
                 logger.info("PostgreSQL Saga: Task {} marked as COMPLETED with completedAt timestamp", taskId);

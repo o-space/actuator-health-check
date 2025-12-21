@@ -1,6 +1,5 @@
 package com.chainsea.healthcheck.service.twophase;
 
-import com.chainsea.healthcheck.model.PC2TransactionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -24,20 +23,19 @@ public class TwoPhaseCommitCoordinator {
 
     private static final Logger logger = LoggerFactory.getLogger(TwoPhaseCommitCoordinator.class);
 
-    private final TwoPhaseCommitParticipant postgresParticipant;
-    private final TwoPhaseCommitParticipant redisParticipant;
-    private final TwoPhaseCommitParticipant mongodbParticipant;
-    private final TwoPhaseCommitParticipant rabbitmqParticipant;
+    private final List<TwoPhaseCommitParticipant> participants;
 
     public TwoPhaseCommitCoordinator(
             PostgresParticipant postgresParticipant,
             RedisParticipant redisParticipant,
             MongoDbParticipant mongodbParticipant,
             RabbitMqParticipant rabbitmqParticipant) {
-        this.postgresParticipant = postgresParticipant;
-        this.redisParticipant = redisParticipant;
-        this.mongodbParticipant = mongodbParticipant;
-        this.rabbitmqParticipant = rabbitmqParticipant;
+        this.participants = List.of(
+                postgresParticipant,
+                redisParticipant,
+                mongodbParticipant,
+                rabbitmqParticipant
+        );
     }
 
     /**
@@ -49,26 +47,20 @@ public class TwoPhaseCommitCoordinator {
      */
     public boolean executeTransaction(String taskId, List<String> serviceNames) {
         String transactionId = UUID.randomUUID().toString();
-        PC2TransactionContext context = new PC2TransactionContext(transactionId);
-        context.addParticipant("postgres", postgresParticipant);
-        context.addParticipant("redis", redisParticipant);
-        context.addParticipant("mongodb", mongodbParticipant);
-        context.addParticipant("rabbitmq", rabbitmqParticipant);
-
         logger.info("Starting 2PC transaction: {}", transactionId);
 
         try {
             // Phase 1: Prepare (Voting Phase)
-            if (!preparePhase(context, taskId, serviceNames)) {
+            if (!preparePhase(transactionId, taskId, serviceNames)) {
                 logger.warn("Prepare phase failed for transaction: {}", transactionId);
-                rollbackPhase(context);
+                rollbackPhase(transactionId);
                 return false;
             }
 
             // Phase 2: Commit
-            if (!commitPhase(context)) {
+            if (!commitPhase(transactionId)) {
                 logger.error("Commit phase failed for transaction: {}", transactionId);
-                rollbackPhase(context);
+                rollbackPhase(transactionId);
                 return false;
             }
 
@@ -76,7 +68,7 @@ public class TwoPhaseCommitCoordinator {
             return true;
         } catch (Exception e) {
             logger.error("Transaction {} failed with exception", transactionId, e);
-            rollbackPhase(context);
+            rollbackPhase(transactionId);
             return false;
         }
     }
@@ -84,38 +76,18 @@ public class TwoPhaseCommitCoordinator {
     /**
      * Phase 1: Prepare - All participants vote on whether they can commit.
      */
-    private boolean preparePhase(PC2TransactionContext context, String taskId, List<String> serviceNames) {
-        context.setCurrentPhase(PC2TransactionContext.TransactionPhase.PREPARING);
-        logger.info("Phase 1: Prepare phase started for transaction: {}", context.getTransactionId());
+    private boolean preparePhase(String transactionId, String taskId, List<String> serviceNames) {
+        logger.info("Phase 1: Prepare phase started for transaction: {}", transactionId);
 
-        boolean allPrepared = true;
-
-        // Prepare PostgreSQL
-        if (!postgresParticipant.prepare(context.getTransactionId(), taskId, serviceNames)) {
-            logger.error("PostgreSQL participant failed to prepare");
-            allPrepared = false;
-        }
-
-        // Prepare Redis
-        if (!redisParticipant.prepare(context.getTransactionId(), taskId, serviceNames)) {
-            logger.error("Redis participant failed to prepare");
-            allPrepared = false;
-        }
-
-        // Prepare MongoDB
-        if (!mongodbParticipant.prepare(context.getTransactionId(), taskId, serviceNames)) {
-            logger.error("MongoDB participant failed to prepare");
-            allPrepared = false;
-        }
-
-        // Prepare RabbitMQ
-        if (!rabbitmqParticipant.prepare(context.getTransactionId(), taskId, serviceNames)) {
-            logger.error("RabbitMQ participant failed to prepare");
-            allPrepared = false;
-        }
+        boolean allPrepared = participants.stream().allMatch(p -> {
+            boolean prepared = p.prepare(transactionId, taskId, serviceNames);
+            if (!prepared) {
+                logger.error("{} failed to prepare", p.getClass().getSimpleName());
+            }
+            return prepared;
+        });
 
         if (allPrepared) {
-            context.setCurrentPhase(PC2TransactionContext.TransactionPhase.PREPARED);
             logger.info("Phase 1: All participants prepared successfully");
             return true;
         } else {
@@ -127,38 +99,18 @@ public class TwoPhaseCommitCoordinator {
     /**
      * Phase 2: Commit - All participants commit their changes.
      */
-    private boolean commitPhase(PC2TransactionContext context) {
-        context.setCurrentPhase(PC2TransactionContext.TransactionPhase.COMMITTING);
-        logger.info("Phase 2: Commit phase started for transaction: {}", context.getTransactionId());
+    private boolean commitPhase(String transactionId) {
+        logger.info("Phase 2: Commit phase started for transaction: {}", transactionId);
 
-        boolean allCommitted = true;
-
-        // Commit PostgreSQL
-        if (!postgresParticipant.commit(context.getTransactionId())) {
-            logger.error("PostgreSQL participant failed to commit");
-            allCommitted = false;
-        }
-
-        // Commit Redis
-        if (!redisParticipant.commit(context.getTransactionId())) {
-            logger.error("Redis participant failed to commit");
-            allCommitted = false;
-        }
-
-        // Commit MongoDB
-        if (!mongodbParticipant.commit(context.getTransactionId())) {
-            logger.error("MongoDB participant failed to commit");
-            allCommitted = false;
-        }
-
-        // Commit RabbitMQ
-        if (!rabbitmqParticipant.commit(context.getTransactionId())) {
-            logger.error("RabbitMQ participant failed to commit");
-            allCommitted = false;
-        }
+        boolean allCommitted = participants.stream().allMatch(p -> {
+            boolean committed = p.commit(transactionId);
+            if (!committed) {
+                logger.error("{} failed to commit", p.getClass().getSimpleName());
+            }
+            return committed;
+        });
 
         if (allCommitted) {
-            context.setCurrentPhase(PC2TransactionContext.TransactionPhase.COMMITTED);
             logger.info("Phase 2: All participants committed successfully");
             return true;
         } else {
@@ -170,17 +122,10 @@ public class TwoPhaseCommitCoordinator {
     /**
      * Rollback - All participants rollback their changes.
      */
-    private void rollbackPhase(PC2TransactionContext context) {
-        context.setCurrentPhase(PC2TransactionContext.TransactionPhase.ROLLING_BACK);
-        logger.info("Rollback phase started for transaction: {}", context.getTransactionId());
-
+    private void rollbackPhase(String transactionId) {
+        logger.info("Rollback phase started for transaction: {}", transactionId);
         // Rollback in reverse order
-        rabbitmqParticipant.rollback(context.getTransactionId());
-        mongodbParticipant.rollback(context.getTransactionId());
-        redisParticipant.rollback(context.getTransactionId());
-        postgresParticipant.rollback(context.getTransactionId());
-
-        context.setCurrentPhase(PC2TransactionContext.TransactionPhase.ROLLED_BACK);
-        logger.info("Rollback phase completed for transaction: {}", context.getTransactionId());
+        participants.reversed().forEach(p -> p.rollback(transactionId));
+        logger.info("Rollback phase completed for transaction: {}", transactionId);
     }
 }

@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.service.twophase;
 
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class MongoDbParticipant implements TwoPhaseCommitParticipant {
             logDoc.append("transactionId", transactionId);
             logDoc.append("taskId", taskId);
             logDoc.append("serviceNames", serviceNames);
-            logDoc.append("status", "PROCESSING");
+            logDoc.append("status", TaskStatus.PROCESSING);
             logDoc.append("createdAt", Instant.now());
 
             // Store in prepare collection (temporary)
@@ -63,7 +64,7 @@ public class MongoDbParticipant implements TwoPhaseCommitParticipant {
             }
 
             // Move from prepare collection to actual collection
-            logDoc.append("status", "COMPLETED");
+            logDoc.append("status", TaskStatus.COMPLETED);
             logDoc.append("completedAt", Instant.now());
             mongoTemplate.insert(logDoc, COLLECTION);
             mongoTemplate.remove(logDoc, PREPARE_COLLECTION);

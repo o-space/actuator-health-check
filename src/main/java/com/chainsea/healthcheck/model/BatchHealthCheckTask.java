@@ -3,6 +3,7 @@ package com.chainsea.healthcheck.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -11,6 +12,8 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import static jakarta.persistence.EnumType.STRING;
 
 /**
  * Entity representing a batch health check task.
@@ -31,8 +34,9 @@ public class BatchHealthCheckTask {
     @Convert(converter = StringListConverter.class)
     private List<String> serviceNames = new ArrayList<>();
 
+    @Enumerated(STRING)
     @Column(nullable = false)
-    private String status; // PENDING, PROCESSING, COMPLETED, FAILED
+    private TaskStatus status;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -46,7 +50,7 @@ public class BatchHealthCheckTask {
     public BatchHealthCheckTask(String taskId, List<String> serviceNames) {
         this.taskId = taskId;
         this.serviceNames = serviceNames;
-        this.status = "PENDING";
+        this.status = TaskStatus.PENDING;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -75,11 +79,11 @@ public class BatchHealthCheckTask {
         this.serviceNames = serviceNames;
     }
 
-    public String getStatus() {
+    public TaskStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(TaskStatus status) {
         this.status = status;
     }
 

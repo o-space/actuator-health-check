@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.service.twophase;
 
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -32,11 +33,11 @@ public class RedisParticipant implements TwoPhaseCommitParticipant {
     public boolean prepare(String transactionId, String taskId, List<String> serviceNames) {
         try {
             logger.info("Redis: Preparing transaction {}", transactionId);
-            String prepareKey = PREPARE_PREFIX + transactionId;
+            String prepareKey = getPrepareKey(transactionId);
             String statusKey = KEY_PREFIX + taskId;
 
             // Store prepared status in temporary key
-            redisTemplate.opsForValue().set(prepareKey, "PROCESSING", 10, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(prepareKey, TaskStatus.PROCESSING.name(), 10, TimeUnit.MINUTES);
             preparedKeys.put(transactionId, statusKey);
 
             logger.info("Redis: Prepared transaction {} successfully", transactionId);
@@ -51,7 +52,7 @@ public class RedisParticipant implements TwoPhaseCommitParticipant {
     public boolean commit(String transactionId) {
         try {
             logger.info("Redis: Committing transaction {}", transactionId);
-            String prepareKey = PREPARE_PREFIX + transactionId;
+            String prepareKey = getPrepareKey(transactionId);
             String statusKey = preparedKeys.get(transactionId);
 
             if (statusKey == null) {
@@ -60,11 +61,8 @@ public class RedisParticipant implements TwoPhaseCommitParticipant {
             }
 
             // Move from prepare key to actual status key
-            String status = redisTemplate.opsForValue().get(prepareKey);
-            if (status != null) {
-                redisTemplate.opsForValue().set(statusKey, "COMPLETED", 1, TimeUnit.HOURS);
-                redisTemplate.delete(prepareKey);
-            }
+            redisTemplate.opsForValue().set(statusKey, TaskStatus.COMPLETED.name(), 1, TimeUnit.HOURS);
+            redisTemplate.delete(prepareKey);
             preparedKeys.remove(transactionId);
 
             logger.info("Redis: Committed transaction {} successfully", transactionId);
@@ -79,12 +77,16 @@ public class RedisParticipant implements TwoPhaseCommitParticipant {
     public void rollback(String transactionId) {
         try {
             logger.info("Redis: Rolling back transaction {}", transactionId);
-            String prepareKey = PREPARE_PREFIX + transactionId;
+            String prepareKey = getPrepareKey(transactionId);
             redisTemplate.delete(prepareKey);
             preparedKeys.remove(transactionId);
             logger.info("Redis: Rolled back transaction {} successfully", transactionId);
         } catch (Exception e) {
             logger.error("Redis: Failed to rollback transaction {}", transactionId, e);
         }
+    }
+
+    private static String getPrepareKey(String transactionId) {
+        return PREPARE_PREFIX + transactionId;
     }
 }

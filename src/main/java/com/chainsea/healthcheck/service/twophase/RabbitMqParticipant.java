@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.service.twophase;
 
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -35,7 +36,7 @@ public class RabbitMqParticipant implements TwoPhaseCommitParticipant {
         try {
             logger.info("RabbitMQ: Preparing transaction {}", transactionId);
             // Prepare message but don't send yet
-            MessageData messageData = new MessageData(taskId, serviceNames, "PROCESSING");
+            MessageData messageData = new MessageData(taskId, serviceNames, TaskStatus.PROCESSING);
             preparedMessages.put(transactionId, messageData);
             logger.info("RabbitMQ: Prepared transaction {} successfully", transactionId);
             return true;
@@ -56,7 +57,7 @@ public class RabbitMqParticipant implements TwoPhaseCommitParticipant {
             }
 
             // Actually send the message
-            messageData.setStatus("COMPLETED");
+            messageData.setStatus(TaskStatus.COMPLETED);
             rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, messageData);
             preparedMessages.remove(transactionId);
 
@@ -84,9 +85,9 @@ public class RabbitMqParticipant implements TwoPhaseCommitParticipant {
 
         private String taskId;
         private List<String> serviceNames;
-        private String status;
+        private TaskStatus status;
 
-        public MessageData(String taskId, List<String> serviceNames, String status) {
+        public MessageData(String taskId, List<String> serviceNames, TaskStatus status) {
             this.taskId = taskId;
             this.serviceNames = serviceNames;
             this.status = status;
@@ -108,11 +109,11 @@ public class RabbitMqParticipant implements TwoPhaseCommitParticipant {
             this.serviceNames = serviceNames;
         }
 
-        public String getStatus() {
+        public TaskStatus getStatus() {
             return status;
         }
 
-        public void setStatus(String status) {
+        public void setStatus(TaskStatus status) {
             this.status = status;
         }
     }
