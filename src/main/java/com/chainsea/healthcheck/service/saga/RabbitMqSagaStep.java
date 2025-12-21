@@ -1,11 +1,12 @@
 package com.chainsea.healthcheck.service.saga;
 
+import com.chainsea.healthcheck.model.MqMessageData;
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -21,6 +22,7 @@ public class RabbitMqSagaStep implements SagaStep {
     private static final String EXCHANGE = "healthcheck.exchange";
     private static final String ROUTING_KEY = "batch.task";
     private static final String COMPENSATION_ROUTING_KEY = "batch.task.cancel";
+    private static final String STEP_NAME = "RabbitMQ";
 
     private final RabbitTemplate rabbitTemplate;
 
@@ -30,7 +32,7 @@ public class RabbitMqSagaStep implements SagaStep {
 
     @Override
     public String getStepName() {
-        return "RabbitMQ";
+        return STEP_NAME;
     }
 
     @Override
@@ -38,12 +40,12 @@ public class RabbitMqSagaStep implements SagaStep {
         try {
             logger.info("RabbitMQ Saga: Executing step for task {}", taskId);
             // Execute local transaction - send message immediately
-            MessageData messageData = new MessageData(taskId, serviceNames, "PROCESSING");
+            MqMessageData messageData = new MqMessageData(taskId, serviceNames, TaskStatus.COMPLETED);
             rabbitTemplate.convertAndSend(EXCHANGE, ROUTING_KEY, messageData);
 
             // Store message data in context for compensation
-            sagaContext.addStepData("rabbitmq", messageData);
-            sagaContext.addStepResult("rabbitmq", "SENT");
+            sagaContext.addStepData(STEP_NAME, messageData);
+            sagaContext.addStepResult(STEP_NAME, TaskStatus.COMPLETED);
 
             logger.info("RabbitMQ Saga: Notification sent for task {}", taskId);
             return true;
@@ -57,53 +59,15 @@ public class RabbitMqSagaStep implements SagaStep {
     public void compensate(SagaContext sagaContext) {
         try {
             logger.info("RabbitMQ Saga: Compensating step");
-            MessageData messageData = (MessageData) sagaContext.getStepData("rabbitmq");
+            MqMessageData messageData = (MqMessageData) sagaContext.getStepData(STEP_NAME);
             if (messageData != null) {
                 // Send a cancellation message to notify downstream services
-                messageData.setStatus("CANCELLED");
+                messageData.setStatus(TaskStatus.CANCELLED);
                 rabbitTemplate.convertAndSend(EXCHANGE, COMPENSATION_ROUTING_KEY, messageData);
                 logger.info("RabbitMQ Saga: Cancellation message sent for task {}", messageData.getTaskId());
             }
         } catch (Exception e) {
             logger.error("RabbitMQ Saga: Failed to compensate", e);
-        }
-    }
-
-    private static class MessageData implements Serializable {
-        private static final long serialVersionUID = 1L;
-
-        private String taskId;
-        private List<String> serviceNames;
-        private String status;
-
-        public MessageData(String taskId, List<String> serviceNames, String status) {
-            this.taskId = taskId;
-            this.serviceNames = serviceNames;
-            this.status = status;
-        }
-
-        public String getTaskId() {
-            return taskId;
-        }
-
-        public void setTaskId(String taskId) {
-            this.taskId = taskId;
-        }
-
-        public List<String> getServiceNames() {
-            return serviceNames;
-        }
-
-        public void setServiceNames(List<String> serviceNames) {
-            this.serviceNames = serviceNames;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
         }
     }
 }

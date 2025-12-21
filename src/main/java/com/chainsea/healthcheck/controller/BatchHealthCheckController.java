@@ -32,6 +32,15 @@ public class BatchHealthCheckController {
         this.sagaOrchestrator = sagaOrchestrator;
     }
 
+    private static Map<String, Object> generateResponse(String taskId, String v2, boolean success, String message) {
+        return Map.of(
+                "taskId", taskId,
+                "pattern", v2,
+                "success", success,
+                "message", message
+        );
+    }
+
     /**
      * Create a batch health check task using 2PC protocol.
      *
@@ -69,15 +78,6 @@ public class BatchHealthCheckController {
         boolean success = sagaOrchestrator.executeSaga(request.taskId(), request.serviceNames());
         Map<String, Object> response = generateResponse(request.taskId(), "Saga", success, success ? "Saga transaction completed successfully" : "Saga transaction failed and compensated");
         return success ? ResponseEntity.ok(response) : ResponseEntity.status(500).body(response);
-    }
-
-    private static Map<String, Object> generateResponse(String taskId, String v2, boolean success, String message) {
-        return Map.of(
-                "taskId", taskId,
-                "pattern", v2,
-                "success", success,
-                "message", message
-        );
     }
 
 }

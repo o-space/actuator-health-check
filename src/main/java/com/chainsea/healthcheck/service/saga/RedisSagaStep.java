@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.service.saga;
 
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,6 +19,7 @@ public class RedisSagaStep implements SagaStep {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisSagaStep.class);
     private static final String KEY_PREFIX = "task:status:";
+    private static final String STEP_NAME = "Redis";
 
     private final StringRedisTemplate redisTemplate;
 
@@ -27,7 +29,7 @@ public class RedisSagaStep implements SagaStep {
 
     @Override
     public String getStepName() {
-        return "Redis";
+        return STEP_NAME;
     }
 
     @Override
@@ -37,11 +39,11 @@ public class RedisSagaStep implements SagaStep {
             String statusKey = KEY_PREFIX + taskId;
 
             // Execute local transaction - cache immediately
-            redisTemplate.opsForValue().set(statusKey, "PROCESSING", 1, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(statusKey, TaskStatus.COMPLETED.name(), 1, TimeUnit.HOURS);
 
             // Store key in context for compensation
-            sagaContext.addStepData("redis", statusKey);
-            sagaContext.addStepResult("redis", "PROCESSING");
+            sagaContext.addStepData(STEP_NAME, statusKey);
+            sagaContext.addStepResult(STEP_NAME, TaskStatus.COMPLETED);
 
             logger.info("Redis Saga: Task {} status cached", taskId);
             return true;
@@ -55,7 +57,7 @@ public class RedisSagaStep implements SagaStep {
     public void compensate(SagaContext sagaContext) {
         try {
             logger.info("Redis Saga: Compensating step");
-            String statusKey = (String) sagaContext.getStepData("redis");
+            String statusKey = (String) sagaContext.getStepData(STEP_NAME);
             if (statusKey != null) {
                 redisTemplate.delete(statusKey);
                 logger.info("Redis Saga: Cached status deleted for key {}", statusKey);

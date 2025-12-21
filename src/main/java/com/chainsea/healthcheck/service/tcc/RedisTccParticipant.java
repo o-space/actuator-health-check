@@ -31,6 +31,14 @@ public class RedisTccParticipant implements TccParticipant {
         this.redisTemplate = redisTemplate;
     }
 
+    private static String getTaskId(String statusKey) {
+        return statusKey.replace(KEY_PREFIX, "");
+    }
+
+    private static String getLockKey(String taskId) {
+        return LOCK_PREFIX + taskId;
+    }
+
     @Override
     public boolean tryExecute(String transactionId, String taskId, List<String> serviceNames) {
         try {
@@ -95,13 +103,5 @@ public class RedisTccParticipant implements TccParticipant {
         } catch (Exception e) {
             logger.error("Redis TCC: Failed to cancel transaction {}", transactionId, e);
         }
-    }
-
-    private static String getTaskId(String statusKey) {
-        return statusKey.replace(KEY_PREFIX, "");
-    }
-
-    private static String getLockKey(String taskId) {
-        return LOCK_PREFIX + taskId;
     }
 }

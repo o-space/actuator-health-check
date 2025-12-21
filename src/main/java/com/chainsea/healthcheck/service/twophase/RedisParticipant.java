@@ -29,6 +29,10 @@ public class RedisParticipant implements TwoPhaseCommitParticipant {
         this.redisTemplate = redisTemplate;
     }
 
+    private static String getPrepareKey(String transactionId) {
+        return PREPARE_PREFIX + transactionId;
+    }
+
     @Override
     public boolean prepare(String transactionId, String taskId, List<String> serviceNames) {
         try {
@@ -84,9 +88,5 @@ public class RedisParticipant implements TwoPhaseCommitParticipant {
         } catch (Exception e) {
             logger.error("Redis: Failed to rollback transaction {}", transactionId, e);
         }
-    }
-
-    private static String getPrepareKey(String transactionId) {
-        return PREPARE_PREFIX + transactionId;
     }
 }

@@ -1,5 +1,6 @@
 package com.chainsea.healthcheck.service.saga;
 
+import com.chainsea.healthcheck.model.TaskStatus;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -23,6 +24,7 @@ public class MongoDbSagaStep implements SagaStep {
 
     private static final Logger logger = LoggerFactory.getLogger(MongoDbSagaStep.class);
     private static final String COLLECTION = "batch_task_logs";
+    private static final String STEP_NAME = "MongoDB";
 
     private final MongoTemplate mongoTemplate;
 
@@ -32,7 +34,7 @@ public class MongoDbSagaStep implements SagaStep {
 
     @Override
     public String getStepName() {
-        return "MongoDB";
+        return STEP_NAME;
     }
 
     @Override
@@ -43,7 +45,7 @@ public class MongoDbSagaStep implements SagaStep {
             logDoc.append("sagaId", sagaContext.getSagaId());
             logDoc.append("taskId", taskId);
             logDoc.append("serviceNames", serviceNames);
-            logDoc.append("status", "PROCESSING");
+            logDoc.append("status", TaskStatus.COMPLETED);
             logDoc.append("createdAt", Instant.now());
 
             // Execute local transaction - insert immediately
@@ -51,8 +53,8 @@ public class MongoDbSagaStep implements SagaStep {
             String documentId = saved.getObjectId("_id").toString();
 
             // Store document ID in context for compensation
-            sagaContext.addStepData("mongodb", documentId);
-            sagaContext.addStepResult("mongodb", saved);
+            sagaContext.addStepData(STEP_NAME, documentId);
+            sagaContext.addStepResult(STEP_NAME, saved);
 
             logger.info("MongoDB Saga: Task {} logged with document ID {}", taskId, documentId);
             return true;
@@ -66,7 +68,7 @@ public class MongoDbSagaStep implements SagaStep {
     public void compensate(SagaContext sagaContext) {
         try {
             logger.info("MongoDB Saga: Compensating step");
-            String documentId = (String) sagaContext.getStepData("mongodb");
+            String documentId = (String) sagaContext.getStepData(STEP_NAME);
             if (documentId != null) {
                 mongoTemplate.remove(query(where("_id").is(new ObjectId(documentId))), COLLECTION);
                 logger.info("MongoDB Saga: Log document {} deleted", documentId);

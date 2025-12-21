@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,11 +36,7 @@ public class SagaOrchestrator {
             RedisSagaStep redisStep,
             MongoDbSagaStep mongodbStep,
             RabbitMqSagaStep rabbitmqStep) {
-        this.sagaSteps = new ArrayList<>();
-        this.sagaSteps.add(postgresStep);
-        this.sagaSteps.add(redisStep);
-        this.sagaSteps.add(mongodbStep);
-        this.sagaSteps.add(rabbitmqStep);
+        this.sagaSteps = List.of(postgresStep, redisStep, mongodbStep, rabbitmqStep);
     }
 
     /**
@@ -72,8 +67,6 @@ public class SagaOrchestrator {
                 logger.info("Saga {}: Step {} ({}) completed successfully", sagaId, i + 1, step.getStepName());
             }
 
-            // All steps completed successfully, update task status to COMPLETED
-            updateTaskStatusToCompleted(context, taskId);
             logger.info("Saga {}: All steps executed successfully", sagaId);
             return true;
         } catch (Exception e) {
@@ -108,20 +101,4 @@ public class SagaOrchestrator {
         logger.info("Saga {}: Compensation completed", context.getSagaId());
     }
 
-    /**
-     * Update task status to COMPLETED after all steps succeed.
-     *
-     * @param context the saga context
-     * @param taskId  the task ID
-     */
-    private void updateTaskStatusToCompleted(SagaContext context, String taskId) {
-        try {
-            // Get the PostgreSQL step to update the task
-            PostgresSagaStep postgresStep = (PostgresSagaStep) sagaSteps.get(0);
-            postgresStep.markTaskAsCompleted(context, taskId);
-            logger.info("Saga {}: Task {} marked as COMPLETED", context.getSagaId(), taskId);
-        } catch (Exception e) {
-            logger.error("Saga {}: Failed to mark task {} as COMPLETED", context.getSagaId(), taskId, e);
-        }
-    }
 }
