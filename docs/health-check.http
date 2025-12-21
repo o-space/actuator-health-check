@@ -15,3 +15,31 @@ Content-Type: application/json
   "serviceName": "test-service",
   "url": "http://localhost:18080/health"
 }
+
+
+### 2PC
+POST http://localhost:8080/api/batch-health-checks/2pc
+Content-Type: application/json
+
+{
+"taskId": "batch-task-005",
+"serviceNames": ["postgres", "redis", "mongodb"]
+}
+
+### TCC
+POST http://localhost:8080/api/batch-health-checks/tcc
+Content-Type: application/json
+
+{
+  "taskId": "batch-task-006",
+  "serviceNames": ["postgres", "redis", "mongodb"]
+}
+
+### Saga
+POST http://localhost:8080/api/batch-health-checks/saga
+Content-Type: application/json
+
+{
+  "taskId": "batch-task-007",
+  "serviceNames": ["postgres", "redis", "mongodb"]
+}
