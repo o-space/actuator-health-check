@@ -50,6 +50,7 @@ public class TwoPhaseCommitCoordinator {
         logger.info("Starting 2PC transaction: {}", transactionId);
 
         try {
+            // transaction.start()
             // Phase 1: Prepare (Voting Phase)
             if (!preparePhase(transactionId, taskId, serviceNames)) {
                 logger.warn("Prepare phase failed for transaction: {}", transactionId);
@@ -63,6 +64,7 @@ public class TwoPhaseCommitCoordinator {
                 rollbackPhase(transactionId);
                 return false;
             }
+            // transaction.commit()
 
             logger.info("Transaction {} committed successfully", transactionId);
             return true;

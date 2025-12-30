@@ -22,8 +22,12 @@ POST http://localhost:8080/api/batch-health-checks/2pc
 Content-Type: application/json
 
 {
-"taskId": "batch-task-005",
-"serviceNames": ["postgres", "redis", "mongodb"]
+  "taskId": "batch-task-005",
+  "serviceNames": [
+    "postgres",
+    "redis",
+    "mongodb"
+  ]
 }
 
 ### TCC

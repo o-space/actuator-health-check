@@ -79,7 +79,7 @@ public class TccCoordinator {
     private boolean tryPhase(String transactionId, String taskId, List<String> serviceNames) {
         logger.info("Phase 1: Try phase started for transaction: {}", transactionId);
 
-        boolean allTried = participants.stream().allMatch(p -> {
+        boolean allTried = participants.parallelStream().allMatch(p -> {
             boolean tried = p.tryExecute(transactionId, taskId, serviceNames);
             if (!tried) {
                 logger.error("{} failed to try", p.getClass().getSimpleName());
@@ -102,7 +102,7 @@ public class TccCoordinator {
     private boolean confirmPhase(String transactionId) {
         logger.info("Phase 2: Confirm phase started for transaction: {}", transactionId);
 
-        boolean allConfirmed = participants.stream().allMatch(p -> {
+        boolean allConfirmed = participants.parallelStream().allMatch(p -> {
             boolean confirmed = p.confirm(transactionId);
             if (!confirmed) {
                 logger.error("{} failed to confirm", p.getClass().getSimpleName());
@@ -126,7 +126,7 @@ public class TccCoordinator {
         logger.info("Cancel phase started for transaction: {}", transactionId);
 
         // Cancel in reverse order
-        participants.reversed().forEach(p -> p.cancel(transactionId));
+        participants.parallelStream().forEach(p -> p.cancel(transactionId));
 
         logger.info("Cancel phase completed for transaction: {}", transactionId);
     }
