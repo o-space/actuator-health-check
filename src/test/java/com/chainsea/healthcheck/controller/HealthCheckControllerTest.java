@@ -20,8 +20,7 @@ import java.util.Optional;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(HealthCheckController.class)
 class HealthCheckControllerTest {
@@ -42,6 +41,7 @@ class HealthCheckControllerTest {
         HealthCheckRequest request = new HealthCheckRequest("test-service", url);
         Map<String, Object> details = Map.of("message", "OK");
         HealthCheckRecord healthCheckRecord = new HealthCheckRecord("test-service", "UP", details, 100L);
+        healthCheckRecord.setId(1L);
         when(healthCheckService.check("test-service", url)).thenReturn(healthCheckRecord);
 
         // When & Then
@@ -49,6 +49,7 @@ class HealthCheckControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "http://localhost/api/health-checks/1"))
                 .andExpect(jsonPath("$.serviceName").value("test-service"))
                 .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.responseTimeMs").value(100));

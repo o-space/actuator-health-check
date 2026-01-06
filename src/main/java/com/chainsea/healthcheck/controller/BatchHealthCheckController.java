@@ -32,10 +32,10 @@ public class BatchHealthCheckController {
         this.sagaOrchestrator = sagaOrchestrator;
     }
 
-    private static Map<String, Object> generateResponse(String taskId, String v2, boolean success, String message) {
+    private static Map<String, Object> generateResponse(String taskId, String pattern, boolean success, String message) {
         return Map.of(
                 "taskId", taskId,
-                "pattern", v2,
+                "pattern", pattern,
                 "success", success,
                 "message", message
         );

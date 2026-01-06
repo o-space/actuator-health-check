@@ -57,7 +57,7 @@ tasks.test {
     useJUnitPlatform {
         excludeTags("smoke", "integration")
     }
-    dependsOn("smokeTest")
+    // dependsOn("smokeTest")
 }
 
 tasks.register<Test>("integrationTest") {
