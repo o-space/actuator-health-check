@@ -39,10 +39,13 @@ class ServiceHealthCheckControllerTest {
         // When & Then
         mockMvc.perform(get("/api/services/{serviceName}/health-checks", serviceName))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].serviceName").value(serviceName))
-                .andExpect(jsonPath("$[0].status").value("UP"))
-                .andExpect(jsonPath("$[1].status").value("DOWN"));
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList").isArray())
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].serviceName").value(serviceName))
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].status").value("UP"))
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[1].status").value("DOWN"))
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._links.stats.href").exists())
+                .andExpect(jsonPath("$._links.latest.href").exists());
     }
 
     @Test
@@ -56,7 +59,10 @@ class ServiceHealthCheckControllerTest {
         mockMvc.perform(get("/api/services/{serviceName}/health-checks/latest", serviceName))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.serviceName").value(serviceName))
-                .andExpect(jsonPath("$.status").value("UP"));
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._links.all-health-checks.href").exists())
+                .andExpect(jsonPath("$._links.stats.href").exists());
     }
 
     @Test
@@ -84,6 +90,9 @@ class ServiceHealthCheckControllerTest {
                 .andExpect(jsonPath("$.serviceName").value(serviceName))
                 .andExpect(jsonPath("$.failureCount").value(5))
                 .andExpect(jsonPath("$.latestStatus").value("UP"))
-                .andExpect(jsonPath("$.hasRecords").value(true));
+                .andExpect(jsonPath("$.hasRecords").value(true))
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._links.health-checks.href").exists())
+                .andExpect(jsonPath("$._links.latest.href").exists());
     }
 }

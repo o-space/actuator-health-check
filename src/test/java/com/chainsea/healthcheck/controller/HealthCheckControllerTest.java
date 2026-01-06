@@ -52,7 +52,10 @@ class HealthCheckControllerTest {
                 .andExpect(header().string("Location", "http://localhost/api/health-checks/1"))
                 .andExpect(jsonPath("$.serviceName").value("test-service"))
                 .andExpect(jsonPath("$.status").value("UP"))
-                .andExpect(jsonPath("$.responseTimeMs").value(100));
+                .andExpect(jsonPath("$.responseTimeMs").value(100))
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._links.service-health-checks.href").exists())
+                .andExpect(jsonPath("$._links.service-stats.href").exists());
     }
 
     @Test
@@ -106,7 +109,10 @@ class HealthCheckControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.serviceName").value("test-service"))
-                .andExpect(jsonPath("$.status").value("UP"));
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._links.service-health-checks.href").exists())
+                .andExpect(jsonPath("$._links.service-stats.href").exists());
     }
 
     @Test
@@ -135,10 +141,11 @@ class HealthCheckControllerTest {
         mockMvc.perform(get("/api/health-checks")
                         .param("serviceName", serviceName))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].serviceName").value(serviceName))
-                .andExpect(jsonPath("$[0].status").value("UP"))
-                .andExpect(jsonPath("$[1].status").value("DOWN"));
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList").isArray())
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].serviceName").value(serviceName))
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].status").value("UP"))
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[1].status").value("DOWN"))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
@@ -154,9 +161,10 @@ class HealthCheckControllerTest {
                         .param("serviceName", serviceName)
                         .param("hours", String.valueOf(hours)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].serviceName").value(serviceName))
-                .andExpect(jsonPath("$[0].status").value("UP"));
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList").isArray())
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].serviceName").value(serviceName))
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].status").value("UP"))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
@@ -172,9 +180,10 @@ class HealthCheckControllerTest {
         mockMvc.perform(get("/api/health-checks")
                         .param("hours", "24"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].serviceName").value("service1"))
-                .andExpect(jsonPath("$[1].serviceName").value("service2"));
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList").isArray())
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].serviceName").value("service1"))
+                .andExpect(jsonPath("$._embedded.healthCheckRecordList[1].serviceName").value("service2"))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
@@ -186,6 +195,8 @@ class HealthCheckControllerTest {
         // When & Then
         mockMvc.perform(get("/api/health-checks"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$._links.self.href").exists())
+                // Empty collection may not have _embedded field
+                .andExpect(jsonPath("$._embedded").doesNotExist());
     }
 }
