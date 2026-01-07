@@ -16,6 +16,13 @@ Content-Type: application/json
   "url": "http://localhost:18080/health"
 }
 
+### Service Health Check
+GET http://localhost:8080/api/services/test-service/health-checks
+Content-Type: application/json
+
+### Single Health Check
+GET http://localhost:8080/api/health-checks/1
+Content-Type: application/json
 
 ### 2PC
 POST http://localhost:8080/api/batch-health-checks/2pc

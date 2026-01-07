@@ -141,10 +141,10 @@ class HealthCheckControllerTest {
         mockMvc.perform(get("/api/health-checks")
                         .param("serviceName", serviceName))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList").isArray())
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].serviceName").value(serviceName))
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].status").value("UP"))
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[1].status").value("DOWN"))
+                .andExpect(jsonPath("$._embedded.healthChecks").isArray())
+                .andExpect(jsonPath("$._embedded.healthChecks[0].serviceName").value(serviceName))
+                .andExpect(jsonPath("$._embedded.healthChecks[0].status").value("UP"))
+                .andExpect(jsonPath("$._embedded.healthChecks[1].status").value("DOWN"))
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
 
@@ -161,9 +161,9 @@ class HealthCheckControllerTest {
                         .param("serviceName", serviceName)
                         .param("hours", String.valueOf(hours)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList").isArray())
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].serviceName").value(serviceName))
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].status").value("UP"))
+                .andExpect(jsonPath("$._embedded.healthChecks").isArray())
+                .andExpect(jsonPath("$._embedded.healthChecks[0].serviceName").value(serviceName))
+                .andExpect(jsonPath("$._embedded.healthChecks[0].status").value("UP"))
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
 
@@ -180,9 +180,9 @@ class HealthCheckControllerTest {
         mockMvc.perform(get("/api/health-checks")
                         .param("hours", "24"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList").isArray())
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].serviceName").value("service1"))
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[1].serviceName").value("service2"))
+                .andExpect(jsonPath("$._embedded.healthChecks").isArray())
+                .andExpect(jsonPath("$._embedded.healthChecks[0].serviceName").value("service1"))
+                .andExpect(jsonPath("$._embedded.healthChecks[1].serviceName").value("service2"))
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
 

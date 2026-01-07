@@ -8,10 +8,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.hateoas.server.core.Relation;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
+@Relation(collectionRelation = "healthChecks", itemRelation = "healthCheck")
 @Entity
 @Table(name = "health_check_records")
 public class HealthCheckRecord {

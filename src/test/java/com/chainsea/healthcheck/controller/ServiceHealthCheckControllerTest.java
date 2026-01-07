@@ -39,10 +39,10 @@ class ServiceHealthCheckControllerTest {
         // When & Then
         mockMvc.perform(get("/api/services/{serviceName}/health-checks", serviceName))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList").isArray())
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].serviceName").value(serviceName))
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[0].status").value("UP"))
-                .andExpect(jsonPath("$._embedded.healthCheckRecordList[1].status").value("DOWN"))
+                .andExpect(jsonPath("$._embedded.healthChecks").isArray())
+                .andExpect(jsonPath("$._embedded.healthChecks[0].serviceName").value(serviceName))
+                .andExpect(jsonPath("$._embedded.healthChecks[0].status").value("UP"))
+                .andExpect(jsonPath("$._embedded.healthChecks[1].status").value("DOWN"))
                 .andExpect(jsonPath("$._links.self.href").exists())
                 .andExpect(jsonPath("$._links.stats.href").exists())
                 .andExpect(jsonPath("$._links.latest.href").exists());
