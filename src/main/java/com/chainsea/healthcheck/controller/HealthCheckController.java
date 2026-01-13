@@ -82,10 +82,7 @@ public class HealthCheckController {
             records = healthCheckService.getHealthChecks(hours);
         }
 
-        List<EntityModel<HealthCheckRecord>> entityModels = records.stream()
-                .map(this::toEntityModel)
-                .collect(Collectors.toList());
-
+        List<EntityModel<HealthCheckRecord>> entityModels = records.stream().map(this::toEntityModel).toList();
         CollectionModel<EntityModel<HealthCheckRecord>> collectionModel = CollectionModel.of(
                 entityModels,
                 linkTo(methodOn(HealthCheckController.class).getHealthChecks(serviceName, hours)).withSelfRel()
